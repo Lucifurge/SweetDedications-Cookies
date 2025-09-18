@@ -56,46 +56,34 @@
   </table>
 
   <script>
-    const SPREADSHEET_ID = "1y5KzVC0K9RDeeEVPqHm6GS11UuL1ENOqEeZOLWHJcS4"; 
-    const SHEET_NAME = "sales"; 
-    const API_KEY = "YOUR_API_KEY"; // replace with your Google Sheets API key
+ const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
 
-    async function fetchOrders() {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
+async function fetchOrders() {
+  const res = await fetch(GAS_URL);
+  const data = await res.json();
 
-      const rows = data.values;
-      if (!rows || rows.length < 2) return;
+  const tbody = document.getElementById("orderBody");
+  tbody.innerHTML = "";
+  let grandTotal = 0;
 
-      // headers: Timestamp | Product | Quantity | Price
-      const tbody = document.getElementById("orderBody");
-      tbody.innerHTML = "";
-      let grandTotal = 0;
+  data.forEach(row => {
+    const qty = parseInt(row.quantity) || 0;
+    const prc = parseFloat(row.price) || 0;
+    const total = qty * prc;
+    grandTotal += total;
 
-      rows.slice(1).forEach(row => {
-        const [timestamp, product, quantity, price] = row;
-        const qty = parseInt(quantity) || 0;
-        const prc = parseFloat(price) || 0;
-        const total = qty * prc;
-        grandTotal += total;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.product}</td>
+      <td>${qty}</td>
+      <td>${prc}</td>
+      <td>${total}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${product}</td>
-          <td>${qty}</td>
-          <td>${prc}</td>
-          <td>${total}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+  document.getElementById("grandTotal").textContent = grandTotal;
+}
 
-      document.getElementById("grandTotal").textContent = grandTotal;
-    }
-
-    // fetch every 5s for live updates
-    setInterval(fetchOrders, 5000);
-    fetchOrders();
-  </script>
 </body>
 </html>
