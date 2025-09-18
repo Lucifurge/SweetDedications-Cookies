@@ -1,102 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cashier Dashboard</title>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cashier Dashboard</title>
+  <style>
     body {
-        background: #fffafc;
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        color: #333;
+      background: #fffafc;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      color: #333;
     }
     h1 {
-        text-align: center;
-        color: #ff69b4;
+      text-align: center;
+      color: #ff69b4;
     }
     table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
     }
     th, td {
-        padding: 10px;
-        border: 1px solid #ddd;
-        text-align: center;
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
     }
     th {
-        background-color: #ffd6e8;
+      background-color: #ffd6e8;
     }
     tfoot td {
-        font-weight: bold;
-        background-color: #fff0f5;
+      font-weight: bold;
+      background-color: #fff0f5;
     }
-</style>
+  </style>
 </head>
 <body>
-<h1>Cashier Orders</h1>
+  <h1>Cashier Orders (Live from Spreadsheet)</h1>
 
-<table>
+  <table>
     <thead>
-        <tr>
-            <th>Item</th>
-            <th>Quantity</th>
-            <th>Price (PHP)</th>
-            <th>Total (PHP)</th>
-        </tr>
+      <tr>
+        <th>Item</th>
+        <th>Quantity</th>
+        <th>Price (PHP)</th>
+        <th>Total (PHP)</th>
+      </tr>
     </thead>
-    <tbody id="orderBody">
-        <!-- Orders will load here -->
-    </tbody>
+    <tbody id="orderBody"></tbody>
     <tfoot>
-        <tr>
-            <td colspan="3">Grand Total</td>
-            <td id="grandTotal">0</td>
-        </tr>
+      <tr>
+        <td colspan="3">Grand Total</td>
+        <td id="grandTotal">0</td>
+      </tr>
     </tfoot>
-</table>
+  </table>
 
-<script>
-const GAS_URL = "YOUR_SCRIPT_URL_HERE"; // <-- same as your doPost exec URL
+  <script>
+    const SPREADSHEET_ID = "1y5KzVC0K9RDeeEVPqHm6GS11UuL1ENOqEeZOLWHJcS4"; 
+    const SHEET_NAME = "sales"; 
+    const API_KEY = "YOUR_API_KEY"; // replace with your Google Sheets API key
 
-async function loadOrders() {
-    try {
-        const res = await fetch(GAS_URL);
-        const data = await res.json();
+    async function fetchOrders() {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+      const res = await fetch(url);
+      const data = await res.json();
 
-        if (data.status === "success") {
-            const tbody = document.getElementById("orderBody");
-            tbody.innerHTML = "";
+      const rows = data.values;
+      if (!rows || rows.length < 2) return;
 
-            let grandTotal = 0;
+      // headers: Timestamp | Product | Quantity | Price
+      const tbody = document.getElementById("orderBody");
+      tbody.innerHTML = "";
+      let grandTotal = 0;
 
-            data.orders.forEach(order => {
-                const row = document.createElement("tr");
+      rows.slice(1).forEach(row => {
+        const [timestamp, product, quantity, price] = row;
+        const qty = parseInt(quantity) || 0;
+        const prc = parseFloat(price) || 0;
+        const total = qty * prc;
+        grandTotal += total;
 
-                row.innerHTML = `
-                    <td>${order.itemName}</td>
-                    <td>${order.quantity}</td>
-                    <td>${order.price}</td>
-                    <td>${order.total}</td>
-                `;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${product}</td>
+          <td>${qty}</td>
+          <td>${prc}</td>
+          <td>${total}</td>
+        `;
+        tbody.appendChild(tr);
+      });
 
-                grandTotal += Number(order.total);
-                tbody.appendChild(row);
-            });
-
-            document.getElementById("grandTotal").textContent = grandTotal;
-        } else {
-            alert("Error: " + data.message);
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Failed to load orders.");
+      document.getElementById("grandTotal").textContent = grandTotal;
     }
-}
 
-loadOrders();
-</script>
-
+    // fetch every 5s for live updates
+    setInterval(fetchOrders, 5000);
+    fetchOrders();
+  </script>
 </body>
 </html>
