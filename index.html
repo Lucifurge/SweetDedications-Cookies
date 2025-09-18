@@ -94,29 +94,28 @@
     </div>
 </div>
 
+<!-- Hidden form for submitting to Google Sheets -->
+<form id="saleForm" action="https://script.google.com/macros/s/AKfycbyD5S1k0b4raSBCRn5USB1Notb5s6nGwPeVNeQa787i-hlAk1PxSoN2BO59Dj8FbPF7/exec" method="post" target="hidden_iframe">
+    <input type="hidden" name="itemName" id="itemName">
+    <input type="hidden" name="price" id="price">
+    <input type="hidden" name="quantity" id="quantity">
+</form>
+<iframe name="hidden_iframe" style="display:none;"></iframe>
+
 <script>
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyvCrRFrLw65jOSvwN025x24twzXKcBtO_6qcPkvs9ICBLVtjEesHv9MeQgNtcr8qEc/exec"; // Replace with your Google Apps Script Web App URL
-
 function recordSale(itemName, price, qtyId) {
-    const quantity = parseInt(document.getElementById(qtyId).value);
-    const total = quantity * price;
-
-    const data = { itemName, price, quantity };
-
-    fetch(SHEET_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(res => {
-        if(res.status === 'success') {
-            alert(`Sale recorded!\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${total}`);
-        } else {
-            alert("Failed to record sale.");
-        }
-    })
-    .catch(err => alert("Error connecting to spreadsheet: " + err));
+    const quantity = document.getElementById(qtyId).value;
+    
+    // Fill hidden form
+    document.getElementById("itemName").value = itemName;
+    document.getElementById("price").value = price;
+    document.getElementById("quantity").value = quantity;
+    
+    // Submit the form to Google Apps Script
+    document.getElementById("saleForm").submit();
+    
+    // Optional alert to user
+    alert(`Sale recorded!\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
 }
 </script>
 
