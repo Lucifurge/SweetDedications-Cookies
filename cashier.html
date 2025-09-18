@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cashier Dashboard</title>
+<style>
+    body {
+        background: #fffafc;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        color: #333;
+    }
+    h1 {
+        text-align: center;
+        color: #ff69b4;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+    th {
+        background-color: #ffd6e8;
+    }
+    tfoot td {
+        font-weight: bold;
+        background-color: #fff0f5;
+    }
+</style>
+</head>
+<body>
+<h1>Cashier Orders</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Price (PHP)</th>
+            <th>Total (PHP)</th>
+        </tr>
+    </thead>
+    <tbody id="orderBody">
+        <!-- Orders will load here -->
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="3">Grand Total</td>
+            <td id="grandTotal">0</td>
+        </tr>
+    </tfoot>
+</table>
+
+<script>
+const GAS_URL = "YOUR_SCRIPT_URL_HERE"; // <-- same as your doPost exec URL
+
+async function loadOrders() {
+    try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+
+        if (data.status === "success") {
+            const tbody = document.getElementById("orderBody");
+            tbody.innerHTML = "";
+
+            let grandTotal = 0;
+
+            data.orders.forEach(order => {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${order.itemName}</td>
+                    <td>${order.quantity}</td>
+                    <td>${order.price}</td>
+                    <td>${order.total}</td>
+                `;
+
+                grandTotal += Number(order.total);
+                tbody.appendChild(row);
+            });
+
+            document.getElementById("grandTotal").textContent = grandTotal;
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Failed to load orders.");
+    }
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>
