@@ -105,16 +105,16 @@
 <script>
 function recordSale(itemName, price, qtyId) {
     const quantity = document.getElementById(qtyId).value;
-    
-    // Fill hidden form
+
+    // Fill hidden form values
     document.getElementById("itemName").value = itemName;
     document.getElementById("price").value = price;
     document.getElementById("quantity").value = quantity;
-    
-    // Submit the form to Google Apps Script
+
+    // Submit form to Google Apps Script
     document.getElementById("saleForm").submit();
-    
-    // Optional alert to user
+
+    // Feedback to user
     alert(`Sale recorded!\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
 }
 </script>
