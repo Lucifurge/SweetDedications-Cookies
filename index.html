@@ -95,6 +95,7 @@
 </div>
 
 <script>
+// 🔗 Replace this with your *current* deployed Web App URL (make sure it's "Anyone" access)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwUCSEq9Z_p2teh8TCaDXjPqVtv7dI4MzAnHt1OxHrPS1BwhQP0O5RdYHEbjXqfzSo/exec";
 
 function recordSale(itemName, price, qtyId) {
@@ -112,17 +113,16 @@ function recordSale(itemName, price, qtyId) {
     .then(res => res.json())
     .then(res => {
         if (res.status === "success") {
-            alert(`Sale recorded!\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
+            alert(`✅ Sale recorded!\n🍪 Item: ${itemName}\n📦 Quantity: ${quantity}\n💵 Total: PHP ${price * quantity}`);
         } else {
-            alert("Error: " + res.message);
+            alert("⚠️ Error: " + res.message);
         }
     })
     .catch(err => {
-        alert("Request failed: " + err);
+        alert("❌ Request failed: " + err);
     });
 }
 </script>
-
 
 </body>
 </html>
