@@ -94,30 +94,35 @@
     </div>
 </div>
 
-<!-- Hidden form for submitting to Google Sheets -->
-<form id="saleForm" action="https://script.google.com/macros/s/AKfycbwXhYcYpCmzab5Ik9k_8pizxjm5YUH2m6Woq5X3lnXRBXmOahpjRpY9sVlWF9KkMutm/exec" method="post" target="hidden_iframe">
-    <input type="hidden" name="itemName" id="itemName">
-    <input type="hidden" name="price" id="price">
-    <input type="hidden" name="quantity" id="quantity">
-</form>
-<iframe name="hidden_iframe" style="display:none;"></iframe>
-
 <script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyD5S1k0b4raSBCRn5USB1Notb5s6nGwPeVNeQa787i-hlAk1PxSoN2BO59Dj8FbPF7/exec";
+
 function recordSale(itemName, price, qtyId) {
     const quantity = document.getElementById(qtyId).value;
 
-    // Fill hidden form values
-    document.getElementById("itemName").value = itemName;
-    document.getElementById("price").value = price;
-    document.getElementById("quantity").value = quantity;
+    const data = new URLSearchParams();
+    data.append("itemName", itemName);
+    data.append("price", price);
+    data.append("quantity", quantity);
 
-    // Submit form to Google Apps Script
-    document.getElementById("saleForm").submit();
-
-    // Feedback to user
-    alert(`Sale recorded!\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
+    fetch(GAS_URL, {
+        method: "POST",
+        body: data
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === "success") {
+            alert(`Sale recorded!\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
+        } else {
+            alert("Error: " + res.message);
+        }
+    })
+    .catch(err => {
+        alert("Request failed: " + err);
+    });
 }
 </script>
+
 
 </body>
 </html>
