@@ -56,34 +56,44 @@
   </table>
 
   <script>
- const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
 
-async function fetchOrders() {
-  const res = await fetch(GAS_URL);
-  const data = await res.json();
+    async function fetchOrders() {
+      try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
 
-  const tbody = document.getElementById("orderBody");
-  tbody.innerHTML = "";
-  let grandTotal = 0;
+        const tbody = document.getElementById("orderBody");
+        tbody.innerHTML = "";
+        let grandTotal = 0;
 
-  data.forEach(row => {
-    const qty = parseInt(row.quantity) || 0;
-    const prc = parseFloat(row.price) || 0;
-    const total = qty * prc;
-    grandTotal += total;
+        data.forEach(row => {
+          const qty = parseInt(row.quantity) || 0;
+          const prc = parseFloat(row.price) || 0;
+          const total = qty * prc;
+          grandTotal += total;
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.product}</td>
-      <td>${qty}</td>
-      <td>${prc}</td>
-      <td>${total}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.product}</td>
+            <td>${qty}</td>
+            <td>${prc}</td>
+            <td>${total}</td>
+          `;
+          tbody.appendChild(tr);
+        });
 
-  document.getElementById("grandTotal").textContent = grandTotal;
-}
+        document.getElementById("grandTotal").textContent = grandTotal;
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
 
+    // Load data on page load
+    fetchOrders();
+
+    // Refresh every 5 seconds
+    setInterval(fetchOrders, 5000);
+  </script>
 </body>
 </html>
