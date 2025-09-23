@@ -64,6 +64,7 @@
 <h1>
   <img src="LOGO.png" alt="Sweet Dedications Logo" style="height:50px; vertical-align:middle; margin-right:10px;">
 </h1>
+
 <div class="product-container">
     <div class="product">
         <img src="2.jpg" alt="Chocolate">
@@ -96,16 +97,24 @@
 </div>
 
 <script>
-// 🔗 Replace this with your *current* deployed Web App URL (make sure it's "Anyone" access)
+// 🔗 Replace with your deployed Web App URL
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
 
 function recordSale(itemName, price, qtyId) {
     const quantity = document.getElementById(qtyId).value;
 
+    // Generate a unique order ID
+    const orderId = 'ORDER-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+    // Show instant confirmation
+    alert(`✅ Order Confirmed!\nOrder ID: ${orderId}\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
+
+    // Send the order in the background
     const data = new URLSearchParams();
     data.append("itemName", itemName);
     data.append("price", price);
     data.append("quantity", quantity);
+    data.append("orderId", orderId);
 
     fetch(GAS_URL, {
         method: "POST",
@@ -113,14 +122,12 @@ function recordSale(itemName, price, qtyId) {
     })
     .then(res => res.json())
     .then(res => {
-        if (res.status === "success") {
-            alert(`✅ Sale recorded!\n🍪 Item: ${itemName}\n📦 Quantity: ${quantity}\n💵 Total: PHP ${price * quantity}`);
-        } else {
-            alert("⚠️ Error: " + res.message);
+        if (res.status !== "success") {
+            console.error("Error recording order:", res.message);
         }
     })
     .catch(err => {
-        alert("❌ Request failed: " + err);
+        console.error("Request failed:", err);
     });
 }
 </script>
