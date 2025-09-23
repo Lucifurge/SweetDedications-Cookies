@@ -1,99 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cashier Dashboard</title>
-  <style>
-    body {
-      background: #fffafc;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      color: #ff69b4;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
-    th {
-      background-color: #ffd6e8;
-    }
-    tfoot td {
-      font-weight: bold;
-      background-color: #fff0f5;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cashier Dashboard</title>
+<style>
+  body {
+    background: #fffafc;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    color: #333;
+  }
+  h1 {
+    text-align: center;
+    color: #ff69b4;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  th {
+    background-color: #ffd6e8;
+  }
+  tfoot td {
+    font-weight: bold;
+    background-color: #fff0f5;
+  }
+  .status-true {
+    color: green;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .status-false {
+    color: red;
+    font-weight: bold;
+    cursor: pointer;
+  }
+</style>
 </head>
 <body>
-  <h1>Cashier Orders (Live from Spreadsheet)</h1>
+<h1>Cashier Orders (Live from Spreadsheet)</h1>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Quantity</th>
-        <th>Price (PHP)</th>
-        <th>Total (PHP)</th>
-      </tr>
-    </thead>
-    <tbody id="orderBody"></tbody>
-    <tfoot>
-      <tr>
-        <td colspan="3">Grand Total</td>
-        <td id="grandTotal">0</td>
-      </tr>
-    </tfoot>
-  </table>
+<table>
+  <thead>
+    <tr>
+      <th>Last Name</th>
+      <th>Item</th>
+      <th>Quantity</th>
+      <th>Price (PHP)</th>
+      <th>Total (PHP)</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="orderBody"></tbody>
+  <tfoot>
+    <tr>
+      <td colspan="4">Grand Total</td>
+      <td id="grandTotal">0</td>
+      <td></td>
+    </tr>
+  </tfoot>
+</table>
 
-  <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
+const REFRESH_INTERVAL = 3000; // 3 seconds
 
-    async function fetchOrders() {
-      try {
-        const res = await fetch(GAS_URL);
-        const data = await res.json();
+// Fetch and display orders
+async function fetchOrders() {
+  try {
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    const tbody = document.getElementById("orderBody");
+    tbody.innerHTML = "";
+    let grandTotal = 0;
 
-        const tbody = document.getElementById("orderBody");
-        tbody.innerHTML = "";
-        let grandTotal = 0;
+    data.forEach((row, index) => {
+      const qty = parseInt(row.quantity) || 0;
+      const price = parseFloat(row.price) || 0;
+      const total = qty * price;
+      grandTotal += total;
 
-        data.forEach(row => {
-          const qty = parseInt(row.quantity) || 0;
-          const prc = parseFloat(row.price) || 0;
-          const total = qty * prc;
-          grandTotal += total;
+      // Get status from localStorage or default to false
+      const statusKey = "status_" + row.rowIndex;
+      const isDone = localStorage.getItem(statusKey) === "done";
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${row.product}</td>
-            <td>${qty}</td>
-            <td>${prc}</td>
-            <td>${total}</td>
-          `;
-          tbody.appendChild(tr);
-        });
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.lastName}</td>
+        <td>${row.product}</td>
+        <td>${qty}</td>
+        <td>${price}</td>
+        <td>${total}</td>
+        <td>
+          <span class="${isDone ? "status-true" : "status-false"}" onclick="toggleStatus(this, '${statusKey}')">
+            ${isDone ? "✅" : "❌"}
+          </span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
 
-        document.getElementById("grandTotal").textContent = grandTotal;
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    }
+    document.getElementById("grandTotal").textContent = grandTotal;
+  } catch (err) {
+    console.error("Error fetching data:", err);
+  }
+}
 
-    // Load data on page load
-    fetchOrders();
+// Toggle status in localStorage
+function toggleStatus(el, key) {
+  if (el.classList.contains("status-true")) {
+    el.textContent = "❌";
+    el.classList.remove("status-true");
+    el.classList.add("status-false");
+    localStorage.setItem(key, "not-done");
+  } else {
+    el.textContent = "✅";
+    el.classList.remove("status-false");
+    el.classList.add("status-true");
+    localStorage.setItem(key, "done");
+  }
+}
 
-    // Refresh every 5 seconds
-    setInterval(fetchOrders, 5000);
-  </script>
+// Initial fetch and auto-refresh
+fetchOrders();
+setInterval(fetchOrders, REFRESH_INTERVAL);
+</script>
 </body>
 </html>
