@@ -15,6 +15,9 @@
         margin-top: 20px;
         font-family: 'Comic Sans MS', cursive, sans-serif;
     }
+    .name-input {
+        margin: 20px 0;
+    }
     .product-container {
         display: flex;
         justify-content: center;
@@ -41,10 +44,14 @@
         font-size: 18px;
         margin: 5px 0;
     }
-    input[type="number"] {
+    input[type="number"], input[type="text"] {
         width: 60px;
         padding: 5px;
         margin-bottom: 10px;
+    }
+    input[type="text"] {
+        width: 200px;
+        margin-bottom: 20px;
     }
     button {
         background-color: #ffb6c1;
@@ -64,6 +71,12 @@
 <h1>
   <img src="LOGO.png" alt="Sweet Dedications Logo" style="height:50px; vertical-align:middle; margin-right:10px;">
 </h1>
+
+<!-- Last Name Input -->
+<div class="name-input">
+    <label for="lastName"><strong>Enter Your Last Name:</strong></label><br>
+    <input type="text" id="lastName" placeholder="e.g. Santos">
+</div>
 
 <div class="product-container">
     <div class="product">
@@ -97,23 +110,29 @@
 </div>
 
 <script>
-// 🔗 Replace with your deployed Web App URL
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx1NA28dHZ5HAotVrSYErXDE54V8aQ3J9L7hDHUhqUIjknerEdk9I2nixsM-dTUoOeY/exec";
 
 function recordSale(itemName, price, qtyId) {
     const quantity = document.getElementById(qtyId).value;
+    const lastName = document.getElementById("lastName").value.trim();
+
+    if (!lastName) {
+        alert("⚠️ Please enter your last name before ordering.");
+        return;
+    }
 
     // Generate a unique order ID
     const orderId = 'ORDER-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
     // Show instant confirmation
-    alert(`✅ Order Confirmed!\nOrder ID: ${orderId}\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
+    alert(`✅ Order Confirmed!\nOrder ID: ${orderId}\nName: ${lastName}\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
 
     // Send the order in the background
     const data = new URLSearchParams();
     data.append("itemName", itemName);
     data.append("price", price);
     data.append("quantity", quantity);
+    data.append("lastName", lastName);
     data.append("orderId", orderId);
 
     fetch(GAS_URL, {
