@@ -1,4 +1,4 @@
-f<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -50,6 +50,8 @@ f<!DOCTYPE html>
 <table>
   <thead>
     <tr>
+      <th>Order ID</th>
+      <th>Last Name</th>
       <th>Item</th>
       <th>Quantity</th>
       <th>Price (PHP)</th>
@@ -60,7 +62,7 @@ f<!DOCTYPE html>
   <tbody id="orderBody"></tbody>
   <tfoot>
     <tr>
-      <td colspan="3">Grand Total</td>
+      <td colspan="5">Grand Total</td>
       <td id="grandTotal">0</td>
       <td></td>
     </tr>
@@ -92,6 +94,8 @@ async function fetchOrders() {
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
+        <td>${row.orderId || ""}</td>
+        <td>${row.lastName || ""}</td>
         <td>${row.product}</td>
         <td>${qty}</td>
         <td>${price}</td>
