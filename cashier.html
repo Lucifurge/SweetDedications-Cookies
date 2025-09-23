@@ -50,7 +50,6 @@
 <table>
   <thead>
     <tr>
-      <th>Last Name</th>
       <th>Item</th>
       <th>Quantity</th>
       <th>Price (PHP)</th>
@@ -61,7 +60,7 @@
   <tbody id="orderBody"></tbody>
   <tfoot>
     <tr>
-      <td colspan="4">Grand Total</td>
+      <td colspan="3">Grand Total</td>
       <td id="grandTotal">0</td>
       <td></td>
     </tr>
@@ -88,12 +87,11 @@ async function fetchOrders() {
       grandTotal += total;
 
       // Get status from localStorage or default to false
-      const statusKey = "status_" + row.rowIndex;
+      const statusKey = "status_" + (row.rowIndex || index);
       const isDone = localStorage.getItem(statusKey) === "done";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${row.lastName}</td>
         <td>${row.product}</td>
         <td>${qty}</td>
         <td>${price}</td>
