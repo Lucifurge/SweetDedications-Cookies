@@ -32,13 +32,18 @@
     font-weight: bold;
     background-color: #fff0f5;
   }
-  .status-true {
+  .status-done {
     color: green;
     font-weight: bold;
     cursor: pointer;
   }
-  .status-false {
+  .status-notdone {
     color: red;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .status-preorder {
+    color: orange;
     font-weight: bold;
     cursor: pointer;
   }
@@ -88,9 +93,20 @@ async function fetchOrders() {
       const total = qty * price;
       grandTotal += total;
 
-      // Get status from localStorage or default to false
+      // Get status from localStorage or default to not-done
       const statusKey = "status_" + (row.rowIndex || index);
-      const isDone = localStorage.getItem(statusKey) === "done";
+      const savedStatus = localStorage.getItem(statusKey) || "not-done";
+
+      let symbol = "❌";
+      let cls = "status-notdone";
+
+      if (savedStatus === "done") {
+        symbol = "✅";
+        cls = "status-done";
+      } else if (savedStatus === "preorder") {
+        symbol = "🟡";
+        cls = "status-preorder";
+      }
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -101,8 +117,8 @@ async function fetchOrders() {
         <td>${price}</td>
         <td>${total}</td>
         <td>
-          <span class="${isDone ? "status-true" : "status-false"}" onclick="toggleStatus(this, '${statusKey}')">
-            ${isDone ? "✅" : "❌"}
+          <span class="${cls}" onclick="toggleStatus(this, '${statusKey}')">
+            ${symbol}
           </span>
         </td>
       `;
@@ -115,18 +131,20 @@ async function fetchOrders() {
   }
 }
 
-// Toggle status in localStorage
+// Toggle status in localStorage (❌ → 🟡 → ✅ → ❌)
 function toggleStatus(el, key) {
-  if (el.classList.contains("status-true")) {
-    el.textContent = "❌";
-    el.classList.remove("status-true");
-    el.classList.add("status-false");
-    localStorage.setItem(key, "not-done");
-  } else {
+  if (el.classList.contains("status-notdone")) {
+    el.textContent = "🟡";
+    el.className = "status-preorder";
+    localStorage.setItem(key, "preorder");
+  } else if (el.classList.contains("status-preorder")) {
     el.textContent = "✅";
-    el.classList.remove("status-false");
-    el.classList.add("status-true");
+    el.className = "status-done";
     localStorage.setItem(key, "done");
+  } else {
+    el.textContent = "❌";
+    el.className = "status-notdone";
+    localStorage.setItem(key, "not-done");
   }
 }
 
