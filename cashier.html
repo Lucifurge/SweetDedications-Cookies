@@ -42,6 +42,11 @@
     font-weight: bold;
     cursor: pointer;
   }
+  .status-preorder {
+    color: orange;
+    font-weight: bold;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -88,8 +93,20 @@ async function fetchOrders() {
       const total = qty * price;
       const status = row.status || "not-done";
 
-      if (status === "done") {
+      // Add to total only if done ✅ or preorder 🟠
+      if (status === "done" || status === "preorder") {
         grandTotal += total;
+      }
+
+      let statusClass = "status-false";
+      let statusSymbol = "❌";
+
+      if (status === "done") {
+        statusClass = "status-true";
+        statusSymbol = "✅";
+      } else if (status === "preorder") {
+        statusClass = "status-preorder";
+        statusSymbol = "🟠";
       }
 
       const tr = document.createElement("tr");
@@ -101,9 +118,9 @@ async function fetchOrders() {
         <td>${price}</td>
         <td>${total}</td>
         <td>
-          <span class="${status === "done" ? "status-true" : "status-false"}" 
+          <span class="${statusClass}" 
                 onclick="toggleStatus(this, '${row.orderId}', '${row.lastName}', '${row.product}', ${qty}, ${price}, '${status}')">
-            ${status === "done" ? "✅" : "❌"}
+            ${statusSymbol}
           </span>
         </td>
       `;
@@ -118,12 +135,27 @@ async function fetchOrders() {
 
 // Toggle status and update via GAS
 async function toggleStatus(el, orderId, lastName, product, qty, price, currentStatus) {
-  const newStatus = currentStatus === "done" ? "not-done" : "done";
+  let newStatus;
+
+  if (currentStatus === "done") {
+    newStatus = "not-done";
+  } else if (currentStatus === "preorder") {
+    newStatus = "done";
+  } else {
+    newStatus = "done"; // default from ❌ to ✅
+  }
 
   // Update UI instantly
-  el.textContent = newStatus === "done" ? "✅" : "❌";
-  el.classList.toggle("status-true", newStatus === "done");
-  el.classList.toggle("status-false", newStatus !== "done");
+  if (newStatus === "done") {
+    el.textContent = "✅";
+    el.className = "status-true";
+  } else if (newStatus === "preorder") {
+    el.textContent = "🟠";
+    el.className = "status-preorder";
+  } else {
+    el.textContent = "❌";
+    el.className = "status-false";
+  }
 
   // Send update to Google Apps Script
   try {
