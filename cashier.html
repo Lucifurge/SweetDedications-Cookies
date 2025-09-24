@@ -69,17 +69,9 @@
   </tfoot>
 </table>
 
-<!-- Supabase client -->
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_Afap0oiK6xJ8Spy_cMLCfUDbwRWtFc3vXCCdrd3Ee8fxqZjM58caRXMJN7pFGzVS/exec";
 const REFRESH_INTERVAL = 3000; // 3 seconds
-
-// Supabase setup
-const SUPABASE_URL = "https://lmxkysfnxgqaacuegkzq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxteGt5c2ZueGdxYWFjdWVna3pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2OTUyNDcsImV4cCI6MjA3NDI3MTI0N30.hta4UEozKHiuVA8ImKc2bNt3Sh1VdMAPfDeeTTf8dto";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Fetch and display orders
 async function fetchOrders() {
@@ -94,18 +86,7 @@ async function fetchOrders() {
       const qty = parseInt(row.quantity) || 0;
       const price = parseFloat(row.price) || 0;
       const total = qty * price;
-
-      // Get status from Supabase
-      let status = "not-done";
-      const { data: dbRow } = await supabase
-        .from("cookies_orders")
-        .select("status")
-        .eq("order_id", row.orderId)
-        .single();
-
-      if (dbRow) {
-        status = dbRow.status;
-      }
+      const status = row.status || "not-done";
 
       if (status === "done") {
         grandTotal += total;
@@ -121,7 +102,7 @@ async function fetchOrders() {
         <td>${total}</td>
         <td>
           <span class="${status === "done" ? "status-true" : "status-false"}" 
-                onclick="toggleStatus(this, '${row.orderId}', '${row.lastName}', '${row.product}', ${qty}, ${price})">
+                onclick="toggleStatus(this, '${row.orderId}', '${row.lastName}', '${row.product}', ${qty}, ${price}, '${status}')">
             ${status === "done" ? "✅" : "❌"}
           </span>
         </td>
@@ -135,29 +116,32 @@ async function fetchOrders() {
   }
 }
 
-// Toggle status and update Supabase
-async function toggleStatus(el, orderId, lastName, product, qty, price) {
-  let newStatus;
-  if (el.classList.contains("status-true")) {
-    newStatus = "not-done";
-    el.textContent = "❌";
-    el.classList.remove("status-true");
-    el.classList.add("status-false");
-  } else {
-    newStatus = "done";
-    el.textContent = "✅";
-    el.classList.remove("status-false");
-    el.classList.add("status-true");
-  }
+// Toggle status and update via GAS
+async function toggleStatus(el, orderId, lastName, product, qty, price, currentStatus) {
+  const newStatus = currentStatus === "done" ? "not-done" : "done";
 
-  await supabase.from("cookies_orders").upsert({
-    order_id: orderId,
-    last_name: lastName,
-    product: product,
-    quantity: qty,
-    price: price,
-    status: newStatus
-  });
+  // Update UI instantly
+  el.textContent = newStatus === "done" ? "✅" : "❌";
+  el.classList.toggle("status-true", newStatus === "done");
+  el.classList.toggle("status-false", newStatus !== "done");
+
+  // Send update to Google Apps Script
+  try {
+    await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId,
+        lastName,
+        product,
+        quantity: qty,
+        price,
+        status: newStatus
+      })
+    });
+  } catch (err) {
+    console.error("Error updating status:", err);
+  }
 }
 
 // Initial fetch and auto-refresh
