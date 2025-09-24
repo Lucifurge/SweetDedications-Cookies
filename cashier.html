@@ -32,18 +32,13 @@
     font-weight: bold;
     background-color: #fff0f5;
   }
-  .status-done {
+  .status-true {
     color: green;
     font-weight: bold;
     cursor: pointer;
   }
-  .status-notdone {
+  .status-false {
     color: red;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .status-preorder {
-    color: orange;
     font-weight: bold;
     cursor: pointer;
   }
@@ -74,9 +69,16 @@
   </tfoot>
 </table>
 
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_Afap0oiK6xJ8Spy_cMLCfUDbwRWtFc3vXCCdrd3Ee8fxqZjM58caRXMJN7pFGzVS/exec";
-const REFRESH_INTERVAL = 3000; // 3 seconds
+const REFRESH_INTERVAL = 1000; // 3 seconds
+
+// Supabase setup
+const SUPABASE_URL = "https://gtfkhfogtfprcjrkztfo.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0ZmtoZm9ndGZwcmNqcmt6dGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2OTcyNzAsImV4cCI6MjA3NDI3MzI3MH0.abkaMRgATN14CFlhgUOZvCvUTOeNfYSbynkavXBNJFI";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Fetch and display orders
 async function fetchOrders() {
@@ -87,25 +89,22 @@ async function fetchOrders() {
     tbody.innerHTML = "";
     let grandTotal = 0;
 
-    data.forEach((row, index) => {
+    for (const row of data) {
       const qty = parseInt(row.quantity) || 0;
       const price = parseFloat(row.price) || 0;
       const total = qty * price;
       grandTotal += total;
 
-      // Get status from localStorage or default to not-done
-      const statusKey = "status_" + (row.rowIndex || index);
-      const savedStatus = localStorage.getItem(statusKey) || "not-done";
+      // Get status from Supabase instead of localStorage
+      let status = "not-done";
+      const { data: dbRow } = await supabase
+        .from("cookies_orders")
+        .select("status")
+        .eq("order_id", row.orderId)
+        .single();
 
-      let symbol = "❌";
-      let cls = "status-notdone";
-
-      if (savedStatus === "done") {
-        symbol = "✅";
-        cls = "status-done";
-      } else if (savedStatus === "preorder") {
-        symbol = "🟡";
-        cls = "status-preorder";
+      if (dbRow) {
+        status = dbRow.status;
       }
 
       const tr = document.createElement("tr");
@@ -117,13 +116,14 @@ async function fetchOrders() {
         <td>${price}</td>
         <td>${total}</td>
         <td>
-          <span class="${cls}" onclick="toggleStatus(this, '${statusKey}')">
-            ${symbol}
+          <span class="${status === "done" ? "status-true" : "status-false"}" 
+                onclick="toggleStatus(this, ${row.orderId}, '${row.lastName}', '${row.product}', ${qty}, ${price})">
+            ${status === "done" ? "✅" : "❌"}
           </span>
         </td>
       `;
       tbody.appendChild(tr);
-    });
+    }
 
     document.getElementById("grandTotal").textContent = grandTotal;
   } catch (err) {
@@ -131,21 +131,30 @@ async function fetchOrders() {
   }
 }
 
-// Toggle status in localStorage (❌ → 🟡 → ✅ → ❌)
-function toggleStatus(el, key) {
-  if (el.classList.contains("status-notdone")) {
-    el.textContent = "🟡";
-    el.className = "status-preorder";
-    localStorage.setItem(key, "preorder");
-  } else if (el.classList.contains("status-preorder")) {
-    el.textContent = "✅";
-    el.className = "status-done";
-    localStorage.setItem(key, "done");
-  } else {
+// Toggle status and update Supabase
+async function toggleStatus(el, orderId, lastName, product, qty, price) {
+  let newStatus;
+  if (el.classList.contains("status-true")) {
+    newStatus = "not-done";
     el.textContent = "❌";
-    el.className = "status-notdone";
-    localStorage.setItem(key, "not-done");
+    el.classList.remove("status-true");
+    el.classList.add("status-false");
+  } else {
+    newStatus = "done";
+    el.textContent = "✅";
+    el.classList.remove("status-false");
+    el.classList.add("status-true");
   }
+
+  // Upsert into Supabase
+  await supabase.from("cookies_orders").upsert({
+    order_id: orderId,
+    last_name: lastName,
+    product: product,
+    quantity: qty,
+    price: price,
+    status: newStatus
+  });
 }
 
 // Initial fetch and auto-refresh
