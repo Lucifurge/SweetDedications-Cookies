@@ -70,14 +70,15 @@
 </table>
 
 <!-- Supabase client -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_Afap0oiK6xJ8Spy_cMLCfUDbwRWtFc3vXCCdrd3Ee8fxqZjM58caRXMJN7pFGzVS/exec";
-const REFRESH_INTERVAL = 1000; // 3 seconds
+const REFRESH_INTERVAL = 3000; // 3 seconds
 
 // Supabase setup
-const SUPABASE_URL = https://lmxkysfnxgqaacuegkzq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxteGt5c2ZueGdxYWFjdWVna3pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2OTUyNDcsImV4cCI6MjA3NDI3MTI0N30.hta4UEozKHiuVA8ImKc2bNt3Sh1VdMAPfDeeTTf8dto";
+const SUPABASE_URL = "https://lmxkysfnxgqaacuegkzq.supabase.co";
+const SUPABASE_KEY = "YOUR_SUPABASE_KEY_HERE";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Fetch and display orders
@@ -93,9 +94,8 @@ async function fetchOrders() {
       const qty = parseInt(row.quantity) || 0;
       const price = parseFloat(row.price) || 0;
       const total = qty * price;
-      grandTotal += total;
 
-      // Get status from Supabase instead of localStorage
+      // Get status from Supabase
       let status = "not-done";
       const { data: dbRow } = await supabase
         .from("cookies_orders")
@@ -105,6 +105,10 @@ async function fetchOrders() {
 
       if (dbRow) {
         status = dbRow.status;
+      }
+
+      if (status === "done") {
+        grandTotal += total;
       }
 
       const tr = document.createElement("tr");
@@ -117,7 +121,7 @@ async function fetchOrders() {
         <td>${total}</td>
         <td>
           <span class="${status === "done" ? "status-true" : "status-false"}" 
-                onclick="toggleStatus(this, ${row.orderId}, '${row.lastName}', '${row.product}', ${qty}, ${price})">
+                onclick="toggleStatus(this, '${row.orderId}', '${row.lastName}', '${row.product}', ${qty}, ${price})">
             ${status === "done" ? "✅" : "❌"}
           </span>
         </td>
@@ -146,7 +150,6 @@ async function toggleStatus(el, orderId, lastName, product, qty, price) {
     el.classList.add("status-true");
   }
 
-  // Upsert into Supabase
   await supabase.from("cookies_orders").upsert({
     order_id: orderId,
     last_name: lastName,
@@ -161,5 +164,6 @@ async function toggleStatus(el, orderId, lastName, product, qty, price) {
 fetchOrders();
 setInterval(fetchOrders, REFRESH_INTERVAL);
 </script>
+
 </body>
 </html>
