@@ -1,153 +1,154 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cashier Dashboard</title>
+<title>Sweet Dedications</title>
 <style>
-  body {
-    background: #fffafc;
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    color: #333;
-  }
-  h1 {
-    text-align: center;
-    color: #ff69b4;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
-  th, td {
-    padding: 10px;
-    border: 1px solid #ddd;
-    text-align: center;
-  }
-  th {
-    background-color: #ffd6e8;
-  }
-  tfoot td {
-    font-weight: bold;
-    background-color: #fff0f5;
-  }
-  .status-true {
-    color: green;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .status-false {
-    color: red;
-    font-weight: bold;
-    cursor: pointer;
-  }
+    body {
+        background-color: #ffd6e8;
+        font-family: 'Arial', sans-serif;
+        text-align: center;
+        color: #333;
+    }
+    h1 {
+        margin-top: 20px;
+        font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+    .name-input {
+        margin: 20px 0;
+    }
+    .product-container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 30px;
+        margin: 40px 0;
+    }
+    .product {
+        background-color: #fff0f5;
+        padding: 15px;
+        border-radius: 15px;
+        width: 200px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .product img {
+        width: 150px;
+        height: 150px;
+        border-radius: 10px;
+    }
+    .product h3 {
+        margin: 10px 0 5px 0;
+    }
+    .product p {
+        font-size: 18px;
+        margin: 5px 0;
+    }
+    input[type="number"], input[type="text"] {
+        width: 60px;
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+    input[type="text"] {
+        width: 200px;
+        margin-bottom: 20px;
+    }
+    button {
+        background-color: #ffb6c1;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    button:hover {
+        background-color: #ff69b4;
+        color: white;
+    }
 </style>
 </head>
 <body>
-<h1>Cashier Orders (Live from Spreadsheet)</h1>
+<h1>
+  <img src="LOGO.png" alt="Sweet Dedications Logo" style="height:50px; vertical-align:middle; margin-right:10px;">
+</h1>
 
-<table>
-  <thead>
-    <tr>
-      <th>Order ID</th>
-      <th>Last Name</th>
-      <th>Item</th>
-      <th>Quantity</th>
-      <th>Price (PHP)</th>
-      <th>Total (PHP)</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody id="orderBody"></tbody>
-  <tfoot>
-    <tr>
-      <td colspan="5">Grand Total</td>
-      <td id="grandTotal">0</td>
-      <td></td>
-    </tr>
-  </tfoot>
-</table>
+<!-- Last Name Input -->
+<div class="name-input">
+    <label for="lastName"><strong>Enter Your Last Name:</strong></label><br>
+    <input type="text" id="lastName" placeholder="e.g. Santos">
+</div>
+
+<div class="product-container">
+    <div class="product">
+        <img src="2.jpg" alt="Chocolate">
+        <h3>Chocolate</h3>
+        <p>PHP 25</p>
+        <input type="number" id="qty1" min="1" value="1">
+        <button onclick="recordSale('Chocolate', 25, 'qty1')">Buy</button>
+    </div>
+    <div class="product">
+        <img src="1.jpg" alt="Caramel">
+        <h3>Caramel</h3>
+        <p>PHP 25</p>
+        <input type="number" id="qty2" min="1" value="1">
+        <button onclick="recordSale('Caramel', 25, 'qty2')">Buy</button>
+    </div>
+    <div class="product">
+        <img src="3.jpg" alt="S'mores">
+        <h3>S'mores</h3>
+        <p>PHP 35</p>
+        <input type="number" id="qty3" min="1" value="1">
+        <button onclick="recordSale('S\'mores', 35, 'qty3')">Buy</button>
+    </div>
+    <div class="product">
+        <img src="4.jpg" alt="White Chocolate">
+        <h3>White Chocolate</h3>
+        <p>PHP 25</p>
+        <input type="number" id="qty4" min="1" value="1">
+        <button onclick="recordSale('White Chocolate', 25, 'qty4')">Buy</button>
+    </div>
+</div>
 
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_Afap0oiK6xJ8Spy_cMLCfUDbwRWtFc3vXCCdrd3Ee8fxqZjM58caRXMJN7pFGzVS/exec";
-const REFRESH_INTERVAL = 3000; // 3 seconds
 
-// Fetch and display orders
-async function fetchOrders() {
-  try {
-    const res = await fetch(GAS_URL);
-    const data = await res.json();
-    const tbody = document.getElementById("orderBody");
-    tbody.innerHTML = "";
-    let grandTotal = 0;
+function recordSale(itemName, price, qtyId) {
+    const quantity = document.getElementById(qtyId).value;
+    const lastName = document.getElementById("lastName").value.trim();
 
-    for (const row of data) {
-      const qty = parseInt(row.quantity) || 0;
-      const price = parseFloat(row.price) || 0;
-      const total = qty * price;
-      const status = row.status || "not-done";
-
-      if (status === "done") {
-        grandTotal += total;
-      }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row.orderId || ""}</td>
-        <td>${row.lastName || ""}</td>
-        <td>${row.product}</td>
-        <td>${qty}</td>
-        <td>${price}</td>
-        <td>${total}</td>
-        <td>
-          <span class="${status === "done" ? "status-true" : "status-false"}" 
-                onclick="toggleStatus(this, '${row.orderId}', '${row.lastName}', '${row.product}', ${qty}, ${price}, '${status}')">
-            ${status === "done" ? "✅" : "❌"}
-          </span>
-        </td>
-      `;
-      tbody.appendChild(tr);
+    if (!lastName) {
+        alert("⚠️ Please enter your last name before ordering.");
+        return;
     }
 
-    document.getElementById("grandTotal").textContent = grandTotal;
-  } catch (err) {
-    console.error("Error fetching data:", err);
-  }
-}
+    // Generate a unique order ID
+    const orderId = 'ORDER-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
-// Toggle status and update via GAS
-async function toggleStatus(el, orderId, lastName, product, qty, price, currentStatus) {
-  const newStatus = currentStatus === "done" ? "not-done" : "done";
+    // Show instant confirmation
+    alert(`✅ Order Confirmed!\nOrder ID: ${orderId}\nName: ${lastName}\nItem: ${itemName}\nQuantity: ${quantity}\nTotal: PHP ${price * quantity}`);
 
-  // Update UI instantly
-  el.textContent = newStatus === "done" ? "✅" : "❌";
-  el.classList.toggle("status-true", newStatus === "done");
-  el.classList.toggle("status-false", newStatus !== "done");
+    // Send the order in the background
+    const data = new URLSearchParams();
+    data.append("itemName", itemName);
+    data.append("price", price);
+    data.append("quantity", quantity);
+    data.append("lastName", lastName);
+    data.append("orderId", orderId);
 
-  // Send update to Google Apps Script
-  try {
-    await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orderId,
-        lastName,
-        product,
-        quantity: qty,
-        price,
-        status: newStatus
-      })
+    fetch(GAS_URL, {
+        method: "POST",
+        body: data
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status !== "success") {
+            console.error("Error recording order:", res.message);
+        }
+    })
+    .catch(err => {
+        console.error("Request failed:", err);
     });
-  } catch (err) {
-    console.error("Error updating status:", err);
-  }
 }
-
-// Initial fetch and auto-refresh
-fetchOrders();
-setInterval(fetchOrders, REFRESH_INTERVAL);
 </script>
 
-</body>
-</html>
+
+
+</body></html>
