@@ -1,7 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cashier Dashboard</title>
+<style>
+  body {
+    background: #fffafc;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    color: #333;
+  }
+  h1 {
+    text-align: center;
+    color: #ff69b4;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  th {
+    background-color: #ffd6e8;
+  }
+  tfoot td {
+    font-weight: bold;
+    background-color: #fff0f5;
+  }
+  .status-true {
+    color: green;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .status-false {
+    color: red;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .status-preorder {
+    color: orange;
+    font-weight: bold;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<h1>Cashier Orders (Local Storage)</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Last Name</th>
+      <th>Item</th>
+      <th>Quantity</th>
+      <th>Price (PHP)</th>
+      <th>Total (PHP)</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="orderBody"></tbody>
+  <tfoot>
+    <tr>
+      <td colspan="5">Grand Total</td>
+      <td id="grandTotal">0</td>
+      <td></td>
+    </tr>
+  </tfoot>
+</table>
+
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_Afap0oiK6xJ8Spy_cMLCfUDbwRWtFc3vXCCdrd3Ee8fxqZjM58caRXMJN7pFGzVS/exec";
 const REFRESH_INTERVAL = 1000; // 1 second
 
+// Helpers
 function getSavedStatus(orderId) {
   return localStorage.getItem("orderStatus_" + orderId) || "not-done";
 }
@@ -9,51 +86,56 @@ function saveStatus(orderId, status) {
   localStorage.setItem("orderStatus_" + orderId, status);
 }
 
-// Fetch and display orders
+// Build or update a single row
+function renderRow(row) {
+  const tbody = document.getElementById("orderBody");
+  const existing = document.getElementById("row_" + row.orderId);
+
+  const qty = parseInt(row.quantity) || 0;
+  const price = parseFloat(row.price) || 0;
+  const total = qty * price;
+
+  let status = getSavedStatus(row.orderId);
+
+  let statusClass = "status-false", statusSymbol = "❌";
+  if (status === "done") { statusClass = "status-true"; statusSymbol = "✅"; }
+  else if (status === "preorder") { statusClass = "status-preorder"; statusSymbol = "🟠"; }
+
+  const rowHtml = `
+    <td>${row.orderId || ""}</td>
+    <td>${row.lastName || ""}</td>
+    <td>${row.product}</td>
+    <td>${qty}</td>
+    <td>${price}</td>
+    <td>${total}</td>
+    <td>
+      <span class="${statusClass}" 
+            data-orderid="${row.orderId}" 
+            data-total="${total}"
+            onclick="toggleStatus(this)">
+        ${statusSymbol}
+      </span>
+    </td>
+  `;
+
+  if (existing) {
+    existing.innerHTML = rowHtml; // update existing row
+  } else {
+    const tr = document.createElement("tr");
+    tr.id = "row_" + row.orderId;
+    tr.innerHTML = rowHtml;
+    tbody.appendChild(tr);
+  }
+}
+
+// Fetch and render
 async function fetchOrders() {
   try {
     const res = await fetch(GAS_URL);
     const data = await res.json();
-    const tbody = document.getElementById("orderBody");
-    tbody.innerHTML = "";
-    let grandTotal = 0;
 
-    for (const row of data) {
-      const qty = parseInt(row.quantity) || 0;
-      const price = parseFloat(row.price) || 0;
-      const total = qty * price;
-
-      // ✅ Always use localStorage status
-      let status = getSavedStatus(row.orderId);
-
-      if (status === "done") grandTotal += total;
-
-      let statusClass = "status-false", statusSymbol = "❌";
-      if (status === "done") { statusClass = "status-true"; statusSymbol = "✅"; }
-      else if (status === "preorder") { statusClass = "status-preorder"; statusSymbol = "🟠"; }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row.orderId || ""}</td>
-        <td>${row.lastName || ""}</td>
-        <td>${row.product}</td>
-        <td>${qty}</td>
-        <td>${price}</td>
-        <td>${total}</td>
-        <td>
-          <span class="${statusClass}" 
-                data-orderid="${row.orderId}" 
-                data-total="${total}"
-                data-status="${status}"
-                onclick="toggleStatus(this)">
-            ${statusSymbol}
-          </span>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    document.getElementById("grandTotal").textContent = grandTotal;
+    data.forEach(row => renderRow(row));
+    updateGrandTotal();
   } catch (err) {
     console.error("Error fetching data:", err);
   }
@@ -62,10 +144,9 @@ async function fetchOrders() {
 // Toggle status instantly
 function toggleStatus(el) {
   const orderId = el.getAttribute("data-orderid");
-  const total = parseFloat(el.getAttribute("data-total")) || 0;
   let currentStatus = getSavedStatus(orderId);
-
   let newStatus;
+
   if (currentStatus === "not-done") newStatus = "preorder";   // ❌ → 🟠
   else if (currentStatus === "preorder") newStatus = "done";  // 🟠 → ✅
   else newStatus = "not-done";                                // ✅ → ❌
@@ -75,20 +156,24 @@ function toggleStatus(el) {
   else if (newStatus === "preorder") { el.textContent = "🟠"; el.className = "status-preorder"; }
   else { el.textContent = "❌"; el.className = "status-false"; }
 
-  el.setAttribute("data-status", newStatus);
   saveStatus(orderId, newStatus);
+  updateGrandTotal();
+}
 
-  // Update grand total locally
+// Update total without full refresh
+function updateGrandTotal() {
   let grandTotal = 0;
   document.querySelectorAll("#orderBody span").forEach(span => {
     if (getSavedStatus(span.getAttribute("data-orderid")) === "done") {
-      grandTotal += parseFloat(span.getAttribute("data-total"));
+      grandTotal += parseFloat(span.getAttribute("data-total")) || 0;
     }
   });
   document.getElementById("grandTotal").textContent = grandTotal;
 }
 
-// Initial fetch + auto refresh
+// Initial load + auto refresh
 fetchOrders();
 setInterval(fetchOrders, REFRESH_INTERVAL);
 </script>
+</body>
+</html>
