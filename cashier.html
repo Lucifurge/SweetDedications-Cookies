@@ -133,16 +133,16 @@ async function fetchOrders() {
   }
 }
 
-// Toggle status and update via GAS
+// Toggle status in cycle ❌ → 🟠 → ✅ → ❌
 async function toggleStatus(el, orderId, lastName, product, qty, price, currentStatus) {
   let newStatus;
 
-  if (currentStatus === "done") {
-    newStatus = "not-done";
+  if (currentStatus === "not-done") {
+    newStatus = "preorder";   // ❌ → 🟠
   } else if (currentStatus === "preorder") {
-    newStatus = "done";
+    newStatus = "done";       // 🟠 → ✅
   } else {
-    newStatus = "done"; // default from ❌ to ✅
+    newStatus = "not-done";   // ✅ → ❌
   }
 
   // Update UI instantly
@@ -180,7 +180,5 @@ async function toggleStatus(el, orderId, lastName, product, qty, price, currentS
 fetchOrders();
 setInterval(fetchOrders, REFRESH_INTERVAL);
 </script>
-
-
 </body>
 </html>
