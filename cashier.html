@@ -50,7 +50,7 @@
 </style>
 </head>
 <body>
-<h1>Cashier Orders (Live from Spreadsheet)</h1>
+<h1>Cashier Orders (Local Storage)</h1>
 
 <table>
   <thead>
@@ -78,6 +78,17 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_Afap0oiK6xJ8Spy_cMLCfUDbwRWtFc3vXCCdrd3Ee8fxqZjM58caRXMJN7pFGzVS/exec";
 const REFRESH_INTERVAL = 3000; // 3 seconds
 
+// Helper: get saved status from localStorage
+function getSavedStatus(orderId) {
+  const saved = localStorage.getItem("orderStatus_" + orderId);
+  return saved || "not-done";
+}
+
+// Helper: save status to localStorage
+function saveStatus(orderId, status) {
+  localStorage.setItem("orderStatus_" + orderId, status);
+}
+
 // Fetch and display orders
 async function fetchOrders() {
   try {
@@ -91,9 +102,11 @@ async function fetchOrders() {
       const qty = parseInt(row.quantity) || 0;
       const price = parseFloat(row.price) || 0;
       const total = qty * price;
-      const status = row.status || "not-done";
 
-      // ✅ Only add if status is "done"
+      // Get status from localStorage
+      let status = getSavedStatus(row.orderId);
+
+      // ✅ Only count done
       if (status === "done") {
         grandTotal += total;
       }
@@ -134,7 +147,7 @@ async function fetchOrders() {
 }
 
 // Toggle status in cycle ❌ → 🟠 → ✅ → ❌
-async function toggleStatus(el, orderId, lastName, product, qty, price, currentStatus) {
+function toggleStatus(el, orderId, lastName, product, qty, price, currentStatus) {
   let newStatus;
 
   if (currentStatus === "not-done") {
@@ -157,23 +170,11 @@ async function toggleStatus(el, orderId, lastName, product, qty, price, currentS
     el.className = "status-false";
   }
 
-  // Send update to Google Apps Script
-  try {
-    await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orderId,
-        lastName,
-        product,
-        quantity: qty,
-        price,
-        status: newStatus
-      })
-    });
-  } catch (err) {
-    console.error("Error updating status:", err);
-  }
+  // Save to localStorage
+  saveStatus(orderId, newStatus);
+
+  // Refresh totals without waiting for fetch
+  fetchOrders();
 }
 
 // Initial fetch and auto-refresh
