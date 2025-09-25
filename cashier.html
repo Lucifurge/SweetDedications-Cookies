@@ -93,8 +93,8 @@ async function fetchOrders() {
       const total = qty * price;
       const status = row.status || "not-done";
 
-      // Add to total only if done ✅ or preorder 🟠
-      if (status === "done" || status === "preorder") {
+      // ✅ Only add if status is "done"
+      if (status === "done") {
         grandTotal += total;
       }
 
@@ -180,6 +180,7 @@ async function toggleStatus(el, orderId, lastName, product, qty, price, currentS
 fetchOrders();
 setInterval(fetchOrders, REFRESH_INTERVAL);
 </script>
+
 
 </body>
 </html>
